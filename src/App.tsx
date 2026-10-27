@@ -21,10 +21,14 @@ import ProductTour from '../components/ProductTour';
 import AboutUsSection from '../components/AboutUsSection';
 import AdminDashboard from '../components/AdminDashboard';
 import SecretLoginModal from '../components/SecretLoginModal';
+import PlatformRating from './components/PlatformRating';
+import { WelcomeModal } from './components/WelcomeModal';
+import { SocialMediaBar } from './components/SocialMediaIcons';
 import NotificationCenterRaw from '../components/NotificationCenter';
 const NotificationCenter = NotificationCenterRaw as any;
 import AiSupportChat from './components/AiSupportChat';
 import ClientSpendingChart from './components/ClientSpendingChart';
+import { PublishedProjectsSection } from './components/PublishedProjectsSection';
 import CmsArticlesSection from '../components/CmsArticlesSection';
 import PaymentWalletsSection from './components/PaymentWalletsSection';
 import GlobalSkeletonLoader from '../components/GlobalSkeletonLoader';
@@ -34,7 +38,7 @@ import { toast } from 'sonner';
 import { translations } from './data/translations';
 import { APPS_DATA, WALLET_OPTIONS, MEDIA_RESOURCES, AppItem } from './data/storeData';
 import { 
-  storageService, buildWhatsAppUrl, ProjectItem, AdminSettings, WalletConfig, MediaResourceItem, AiCustomizationDraft, UserOrder,
+  storageService, buildWhatsAppUrl, ProjectItem, AdminSettings, WalletConfig, MediaResourceItem, AiCustomizationDraft, UserOrder, PublishedProject,
   getProjects, getSettings, getWallets, getMediaResources, getPlans, getNotifications, UserNotification, CmsArticle, AnnouncementBanner
 } from './services/storageService';
 import { subscribeToAuthChanges, signOutUser } from './services/firebaseService';
@@ -104,13 +108,17 @@ export default function App() {
   const isRtl = lang === 'ar';
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [viewMode, setViewMode] = useState<'onepage' | 'tabs'>('onepage');
-  const [activeSection, setActiveSection] = useState<string>('hero');
-  const [activeTab, setActiveTab] = useState<'store' | 'sandbox' | 'articles' | 'pricing' | 'faq' | 'media' | 'billing' | 'vscode' | 'client-dashboard' | 'about' | 'cms-dashboard' | 'wallets'>('store');
+  const [viewMode] = useState<'tabs'>('tabs');
+  const [activeTab, setActiveTab] = useState<'store' | 'sandbox' | 'articles' | 'pricing' | 'faq' | 'rating' | 'media' | 'billing' | 'vscode' | 'client-dashboard' | 'about' | 'cms-dashboard' | 'wallets' | 'published-projects'>('store');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sandboxConfig, setSandboxConfig] = useState<any>(null);
   const [isAnnouncementDismissed, setIsAnnouncementDismissed] = useState<boolean>(false);
-  const [showThreeDLoader, setShowThreeDLoader] = useState(true);
+
+  // Autostart skip logic for testing/verification
+  const isAutostart = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('autostart') === '1';
+  
+  const [showThreeDLoader, setShowThreeDLoader] = useState(!isAutostart);
+  const [showWelcomeModal, setShowWelcomeModal] = useState<boolean>(() => !isAutostart && !localStorage.getItem('hasSeenWelcome'));
 
   // Admin Master State
   const [isAdmin, setIsAdmin] = useState(false);
@@ -180,6 +188,7 @@ export default function App() {
   const [userOrders, setUserOrders] = useState<UserOrder[]>(() => storageService.getUserOrders());
   const [articles, setArticles] = useState<CmsArticle[]>(() => storageService.getArticles(false));
   const [announcements, setAnnouncements] = useState<AnnouncementBanner[]>(() => storageService.getAnnouncements());
+  const [publishedProjects, setPublishedProjects] = useState<PublishedProject[]>(() => storageService.getPublishedProjects());
 
   const refreshStorageData = () => {
     const isAdminActive = storageService.isAdminLoggedIn();
@@ -197,6 +206,7 @@ export default function App() {
     setUserOrders(storageService.getUserOrders());
     setArticles(storageService.getArticles(false));
     setAnnouncements(storageService.getAnnouncements());
+    setPublishedProjects(storageService.getPublishedProjects());
   };
 
   useEffect(() => {
@@ -247,38 +257,9 @@ export default function App() {
     };
   }, []);
 
-  // ScrollSpy for Single Page Application navigation
-  useEffect(() => {
-    if (viewMode !== 'onepage') return;
-
-    const sectionIds = ['hero', 'store', 'wallets', 'articles', 'faq', 'about', 'client-portal'];
-    const handleScroll = () => {
-      const scrollPos = window.scrollY + 200;
-      for (let i = sectionIds.length - 1; i >= 0; i--) {
-        const id = sectionIds[i];
-        const el = document.getElementById(id);
-        if (el && el.offsetTop <= scrollPos) {
-          setActiveSection(id);
-          break;
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [viewMode]);
-
   const scrollToSection = (id: string) => {
-    setActiveSection(id);
-    if (viewMode === 'tabs') {
-      if (['store', 'wallets', 'articles', 'faq', 'media', 'billing', 'vscode', 'client-dashboard', 'about'].includes(id)) {
-        setActiveTab(id as any);
-      }
-    }
-    const elem = document.getElementById(id);
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    setActiveTab(id as any);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLogoClick = (e?: React.MouseEvent) => {
@@ -407,12 +388,8 @@ export default function App() {
       setSandboxConfig(itemOrConfig);
     }
 
-    if (viewMode === 'onepage') {
-      scrollToSection('sandbox');
-    } else {
-      setActiveTab('sandbox');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setActiveTab('sandbox');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCopyCode = (textToCopy: string) => {
@@ -424,7 +401,7 @@ export default function App() {
   const activeAnnouncement = announcements.find(a => a.isActive);
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`min-h-screen transition-colors duration-300 star-field animate-stars ${
       effectiveTheme === 'dark' 
         ? 'bg-slate-950 text-slate-100' 
         : 'bg-slate-50 text-slate-900'
@@ -580,7 +557,7 @@ export default function App() {
               ...(isUserLoggedIn ? [{ id: 'client-portal', label: isRtl ? 'لوحة العميل' : 'My Account', icon: User }] : [])
             ].map((nav) => {
               const Icon = nav.icon;
-              const isActive = viewMode === 'onepage' ? activeSection === nav.id : activeTab === (nav.id as any);
+              const isActive = activeTab === nav.id;
               return (
                 <button
                   key={nav.id}
@@ -612,29 +589,20 @@ export default function App() {
               </button>
             )}
 
-            {/* View Mode Switcher */}
-            <button
-              onClick={() => setViewMode(viewMode === 'onepage' ? 'tabs' : 'onepage')}
-              title={isRtl ? 'تبديل طريقة العرض بين صفحة واحدة وتبويبات' : 'Toggle between One-Page & Tabs'}
-              className="hidden md:flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-xs font-bold text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer"
-            >
-              <Sliders className="w-3.5 h-3.5 text-blue-400" />
-              <span>{viewMode === 'onepage' ? (isRtl ? 'صفحة واحدة' : 'One-Page') : (isRtl ? 'تبويبات' : 'Tabs')}</span>
-            </button>
-
             {/* Language Switcher */}
             <button
               onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-              className="hidden sm:flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 hover:border-slate-700 transition"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-200 hover:border-slate-700 transition active:scale-95"
+              title={isRtl ? 'Switch to English' : 'تحويل للعربية'}
             >
               <Globe className="w-3.5 h-3.5 text-blue-400" />
-              <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
+              <span className={isMobileMenuOpen ? 'inline' : 'hidden sm:inline'}>{lang === 'ar' ? 'EN' : 'AR'}</span>
             </button>
 
             {/* Theme Toggle */}
             <button
               onClick={() => setTheme(effectiveTheme === 'dark' ? 'light' : 'dark')}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-300 hover:text-white hover:border-slate-700 transition"
+              className="rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-300 hover:text-white hover:border-slate-700 transition active:scale-95"
             >
               {effectiveTheme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
             </button>
@@ -684,6 +652,7 @@ export default function App() {
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="xl:hidden rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-300 hover:text-white"
+              aria-label={isMobileMenuOpen ? 'Close Menu' : 'Open Menu'}
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -692,383 +661,82 @@ export default function App() {
 
         {/* Mobile Navigation Dropdown */}
         {isMobileMenuOpen && (
-          <div className="xl:hidden border-t border-slate-800 bg-slate-950 p-4 space-y-3 animate-fadeIn">
-            <div className="space-y-1.5">
-              {[
-                { id: 'hero', label: isRtl ? 'الرئيسية' : 'Home', icon: Compass },
-                { id: 'store', label: isRtl ? 'سوق المنظومات' : 'App Store', icon: Layers },
-                { id: 'articles', label: isRtl ? 'المقالات والـ CMS' : 'CMS & Articles', icon: FileText },
-                { id: 'wallets', label: isRtl ? 'طرق الدفع' : 'Payment Methods', icon: CreditCard },
-                { id: 'faq', label: isRtl ? 'الأسئلة الشائعة' : 'FAQ', icon: HelpCircle },
-                { id: 'about', label: isRtl ? 'من نحن' : 'About Us', icon: Sparkles },
-                ...(isUserLoggedIn ? [{ id: 'client-portal', label: isRtl ? 'لوحة العميل' : 'My Account', icon: User }] : []),
-                { id: 'cms-dashboard', label: isRtl ? '👑 لوحة التحكم والـ CMS' : '👑 CMS & Admin Panel', icon: Crown, highlight: true }
-              ].map((nav) => {
-                const Icon = nav.icon;
-                return (
-                  <button
-                    key={nav.id}
-                    onClick={() => {
-                      scrollToSection(nav.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                      nav.highlight 
-                        ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
-                        : (activeSection === nav.id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-900')
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{nav.label}</span>
-                  </button>
-                );
-              })}
+          <div className="xl:hidden fixed inset-x-0 top-20 bottom-0 z-50 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800 p-6 space-y-6 overflow-y-auto animate-slideDown">
+            {/* Quick Actions at Top of Menu */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm font-bold text-white shadow-xl transition active:scale-95"
+              >
+                <Globe className="w-5 h-5 text-blue-400" />
+                <span>{lang === 'ar' ? 'English (EN)' : 'العربية (AR)'}</span>
+              </button>
+              <button
+                onClick={() => setTheme(effectiveTheme === 'dark' ? 'light' : 'dark')}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm font-bold text-white shadow-xl transition active:scale-95"
+              >
+                {effectiveTheme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+                <span>{isRtl ? 'المظهر' : 'Theme'}</span>
+              </button>
             </div>
+
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4">{isRtl ? 'تصفح المنصة' : 'Explore Platform'}</span>
+              <div className="space-y-1">
+                {[
+                  { id: 'hero', label: isRtl ? 'الرئيسية' : 'Home', icon: Compass },
+                  { id: 'store', label: isRtl ? 'سوق المنظومات' : 'App Store', icon: Layers },
+                  { id: 'articles', label: isRtl ? 'المقالات والـ CMS' : 'CMS & Articles', icon: FileText },
+                  { id: 'wallets', label: isRtl ? 'طرق الدفع' : 'Payment Methods', icon: CreditCard },
+                  { id: 'published-projects', label: isRtl ? 'مشروعات منشورة' : 'Published Projects', icon: Globe },
+                  { id: 'faq', label: isRtl ? 'الأسئلة الشائعة' : 'FAQ', icon: HelpCircle },
+                  { id: 'rating', label: isRtl ? 'تقييم المنصة' : 'Rate Platform', icon: Star },
+                  { id: 'about', label: isRtl ? 'من نحن' : 'About Us', icon: Sparkles },
+                  ...(isUserLoggedIn ? [{ id: 'client-portal', label: isRtl ? 'لوحة العميل' : 'My Account', icon: User }] : []),
+                  { id: 'cms-dashboard', label: isRtl ? '👑 لوحة التحكم والـ CMS' : '👑 CMS & Admin Panel', icon: Crown, highlight: true }
+                ].map((nav) => {
+                  const Icon = nav.icon;
+                  const isCurrent = activeTab === nav.id;
+                  return (
+                    <button
+                      key={nav.id}
+                      onClick={() => {
+                        scrollToSection(nav.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-4 rounded-2xl px-5 py-4 text-base font-bold transition-all ${
+                        nav.highlight 
+                          ? 'bg-gradient-to-r from-amber-600/20 to-amber-900/20 border border-amber-500/30 text-amber-300' 
+                          : (isCurrent ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-300 hover:bg-slate-900 border border-transparent')
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${isCurrent ? 'text-white' : 'text-blue-400'}`} />
+                      <span>{nav.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Account Actions in Menu */}
+            {!isUserLoggedIn && (
+              <div className="pt-4 border-t border-slate-800">
+                <button
+                  onClick={() => { setIsClientLoginOpen(true); setIsMobileMenuOpen(false); }}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-base font-black text-white shadow-xl shadow-blue-600/20 transition active:scale-95"
+                >
+                  <User className="w-5 h-5" />
+                  <span>{isRtl ? 'دخول العميل' : 'Client Login'}</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </header>
 
-      {/* Main Single-Page / Tabbed Flow */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
-        
-        {viewMode === 'onepage' ? (
-          /* ============================================================ */
-          /* ONE-PAGE ARCHITECTURE (عرض الصفحة الواحدة المتكاملة)           */
-          /* ============================================================ */
-          <div className="space-y-16">
-            
-            {/* SECTION 0: HERO & DYNAMIC PLATFORM METRICS */}
-            <section id="hero" className="w-full space-y-8 scroll-mt-24">
-              <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-indigo-950/50 to-slate-950 p-6 sm:p-10 md:p-12 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-                <div className="relative z-10 space-y-6 max-w-4xl">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-bold text-blue-300">
-                    <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
-                    <span>
-                      {isRtl 
-                        ? (adminSettings?.heroBadgeAr || 'منصة ويب ديناميكية متكاملة • محرك CMS • لوحة تحكم مخصصة • تملك كامل للكود')
-                        : (adminSettings?.heroBadgeEn || 'Unified Dynamic Web Platform, CMS & One-Page Suite')}
-                    </span>
-                  </div>
-
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight tracking-tight">
-                    {isRtl 
-                      ? (adminSettings?.heroTitleAr || 'منظومة ليرن ويب المتكاملة لإدارة المراكز، سوق الأدوات والـ CMS')
-                      : (adminSettings?.heroTitleEn || 'Lern Web Unified Dynamic Platform & Dedicated CMS')}
-                  </h1>
-
-                  <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-3xl">
-                    {isRtl 
-                      ? (adminSettings?.heroSubtitleAr || 'تطبيق ويب ديناميكي متكامل ذو صفحة واحدة يوفر سوقاً حياً لمنظومات السناتر والتعليم الذكي، محاكياً تفاعلياً مدعوماً بالذكاء الاصطناعي، ونظام إدارة محتوى (CMS) متقدم يمنحك لوحة تحكم مخصصة لإدارة المقالات، الإعلانات، المحافظ، ومسودات الـ AI لحظياً.')
-                      : (adminSettings?.heroSubtitleEn || 'An integrated single-page dynamic web application offering a live educational software marketplace, interactive AI sandbox simulator, and dedicated CMS control panel for live content and system orchestration.')}
-                  </p>
-
-                  {/* Fast Action CTA Buttons */}
-                  <div className="flex flex-wrap items-center gap-3 pt-2">
-                    <button
-                      onClick={() => scrollToSection('store')}
-                      className="flex items-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-500 px-6 py-3.5 text-xs sm:text-sm font-black text-white shadow-lg shadow-blue-600/30 transition active:scale-95 cursor-pointer"
-                    >
-                      <Layers className="w-4 h-4" />
-                      <span>{isRtl ? 'استعراض سوق المنظومات' : 'Explore Marketplace'}</span>
-                    </button>
-
-                    <button
-                      onClick={() => scrollToSection('wallets')}
-                      className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/90 hover:bg-slate-800 px-6 py-3.5 text-xs sm:text-sm font-bold text-slate-200 transition active:scale-95 cursor-pointer"
-                    >
-                      <CreditCard className="w-4 h-4 text-emerald-400" />
-                      <span>{isRtl ? 'طرق الدفع والتحويل المباشر' : 'Direct Payment Methods'}</span>
-                    </button>
-
-                    <button
-                      onClick={() => scrollToSection('articles')}
-                      className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/90 hover:bg-slate-800 px-5 py-3.5 text-xs sm:text-sm font-bold text-slate-200 transition active:scale-95 cursor-pointer"
-                    >
-                      <FileText className="w-4 h-4 text-purple-400" />
-                      <span>{isRtl ? 'مقالات ودراسات الـ CMS' : 'CMS Knowledgebase'}</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (isAdmin) {
-                          scrollToSection('cms-dashboard');
-                        } else {
-                          setIsSecretLoginOpen(true);
-                        }
-                      }}
-                      className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3.5 text-xs sm:text-sm font-black text-slate-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-orange-400 transition active:scale-95 cursor-pointer"
-                    >
-                      <Crown className="w-4 h-4" />
-                      <span>{isRtl ? 'لوحة التحكم والـ CMS' : 'CMS Control Panel'}</span>
-                    </button>
-                  </div>
-
-                  {/* Dynamic Metrics Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-4">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-1">
-                      <div className="text-2xl sm:text-3xl font-black text-blue-400 font-mono">
-                        {projects.length}
-                      </div>
-                      <div className="text-xs text-slate-400 font-bold">
-                        {isRtl ? 'منظومات ومشاريع جاهزة' : 'Deployable Systems'}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-1">
-                      <div className="text-2xl sm:text-3xl font-black text-purple-400 font-mono">
-                        {articles.length}
-                      </div>
-                      <div className="text-xs text-slate-400 font-bold">
-                        {isRtl ? 'مقالات ودراسات الـ CMS' : 'Live CMS Articles'}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-1">
-                      <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
-                        {userDrafts.length}
-                      </div>
-                      <div className="text-xs text-slate-400 font-bold">
-                        {isRtl ? 'مسودات وتخصيصات AI' : 'Staged AI Drafts'}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-1">
-                      <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">
-                        {wallets.filter(w => w.isActive !== false).length}
-                      </div>
-                      <div className="text-xs text-slate-400 font-bold">
-                        {isRtl ? 'طرق دفع معتمدة' : 'Verified Payment Channels'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Target Section Videos for Hero / Home */}
-              <SectionMediaShowcase targetSection="hero" lang={lang} />
-            </section>
-
-            {/* SECTION 1: MARKETPLACE & APP STORE */}
-            <section id="store" className="scroll-mt-24">
-              <AppStore
-                apps={projects as any}
-                lang={lang}
-                t={t}
-                onLaunchSandbox={handleLaunchAppInSandbox}
-                onSelectAppForDeploy={handleLaunchAppInSandbox}
-                isAdmin={isAdmin}
-                isUserLoggedIn={isUserLoggedIn}
-                adminSettings={adminSettings}
-                onOpenLogin={() => setIsClientLoginOpen(true)}
-                onOpenAdminPortal={() => {
-                  if (isAdmin) scrollToSection('cms-dashboard');
-                  else setIsSecretLoginOpen(true);
-                }}
-                showToast={showToast}
-              />
-            </section>
-
-            {/* SECTION 2: PAYMENT METHODS & WALLETS */}
-            <PaymentWalletsSection
-              wallets={wallets}
-              adminSettings={adminSettings}
-              lang={lang}
-              showToast={showToast}
-            />
-
-            {/* SECTION 3: DYNAMIC CMS ARTICLES & KNOWLEDGEBASE */}
-            <CmsArticlesSection
-              lang={lang}
-              isAdmin={isAdmin}
-              onOpenAdminCms={() => {
-                if (isAdmin) scrollToSection('cms-dashboard');
-                else setIsSecretLoginOpen(true);
-              }}
-              showToast={showToast}
-            />
-
-            {/* SECTION 5: FREQUENTLY ASKED QUESTIONS */}
-            <section id="faq" className="scroll-mt-24">
-              <FaqSection lang={lang} adminSettings={adminSettings} />
-            </section>
-
-            {/* SECTION 6: ABOUT US & UNIVERSAL ARCHITECTURE */}
-            <section id="about" className="scroll-mt-24">
-              <AboutUsSection lang={lang} onClose={() => scrollToSection('hero')} />
-            </section>
-
-            {/* SECTION 7: CLIENT PORTAL SECTION */}
-            <section id="client-portal" className="scroll-mt-24 space-y-6">
-              {isUserLoggedIn ? (
-                <div className="space-y-8">
-                  <div className="rounded-3xl border border-blue-500/40 bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900 p-6 md:p-10 shadow-2xl space-y-4">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase">
-                          <User className="w-4 h-4" />
-                          <span>{isRtl ? 'لوحة العميل الخاصة' : 'Client Account Portal'}</span>
-                        </div>
-                        <h2 className="text-3xl md:text-4xl font-black text-white">
-                          {isRtl ? `مرحباً بك، ${currentUser?.name || 'عميلنا العزيز'}` : `Welcome back, ${currentUser?.name || 'Valued Client'}`}
-                        </h2>
-                      </div>
-
-                      <div className="flex items-center gap-2.5">
-                        <button
-                          onClick={() => window.print()}
-                          className="no-print flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white/10 transition"
-                        >
-                          <Printer className="w-4 h-4" />
-                          <span>{isRtl ? 'طباعة تقرير الحالة' : 'Print Status Report'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleClientLogout}
-                          className="no-print flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition cursor-pointer"
-                        >
-                          <LogOut className="w-4 h-4 text-rose-400" />
-                          <span>{isRtl ? 'تسجيل الخروج' : 'Log Out'}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                      <NotificationCenter 
-                        notifications={notifications.filter(n => n.userId === currentUser?.id)} 
-                        lang={lang} 
-                        onRefresh={refreshStorageData} 
-                      />
-
-                      <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 md:p-8 shadow-xl space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-indigo-400" />
-                            {isRtl ? 'تحليل المصروفات التعليمية' : 'Educational Spending Analytics'}
-                          </h3>
-                        </div>
-                        <ClientSpendingChart 
-                          orders={userOrders.filter(o => o.userId === currentUser?.id)} 
-                          lang={lang} 
-                        />
-                      </div>
-
-                      {/* AI Drafts Table */}
-                      <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 md:p-8 shadow-xl space-y-6">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                          <Rocket className="w-5 h-5 text-blue-400" />
-                          {isRtl ? 'سجل طلبات التعديل (AI Drafts)' : 'AI Customization History'}
-                        </h3>
-
-                        {userDrafts.length === 0 ? (
-                          <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-8 text-center text-slate-500 space-y-2">
-                            <p className="font-bold">{isRtl ? 'لا توجد طلبات مسجلة بعد' : 'No requests yet'}</p>
-                            <p className="text-xs">{isRtl ? 'استخدم المحاكي التفاعلي لتخصيص منصتك وإرسالها للمراجعة.' : 'Use the Sandbox to stage and submit your first customization.'}</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {userDrafts.map((draft) => (
-                              <div key={draft.id} className="rounded-2xl border border-slate-800 bg-slate-950 p-4 space-y-2">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="font-bold text-white">{draft.modifiedConfig?.centerName || 'المركز التعليمي'}</span>
-                                  <span className="text-[10px] font-mono text-slate-500">{draft.forkedAt}</span>
-                                </div>
-                                <p className="text-xs text-slate-300 italic">"{draft.userPrompt}"</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <UserProfileSection
-                        currentUser={currentUser}
-                        userDraftsCount={userDrafts.length}
-                        lang={lang}
-                        onUserUpdated={(updated) => setCurrentUser(updated)}
-                        onLogout={handleClientLogout}
-                      />
-                      <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl">
-                        <PwaDiagnostics lang={lang} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-8 text-center space-y-4">
-                  <User className="w-12 h-12 text-blue-400 mx-auto opacity-80" />
-                  <h3 className="text-xl font-bold text-white">
-                    {isRtl ? 'بوابة حساب العميل ومتابعة الطلبات' : 'Client Account & Order Portal'}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto">
-                    {isRtl 
-                      ? 'سجل دخولك أو أنشئ حساباً جديداً لمتابعة حالة التراخيص ومسودات الذكاء الاصطناعي والاستفادة من الدعم الفني المباشر.' 
-                      : 'Sign in to access your staged AI requests, license records, and priority support.'}
-                  </p>
-                  <button
-                    onClick={() => setIsClientLoginOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-xs sm:text-sm font-bold text-white hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-600/30 transition active:scale-95 cursor-pointer"
-                  >
-                    <User className="w-4 h-4" />
-                    <span>{isRtl ? 'تسجيل الدخول / إنشاء حساب' : 'Sign In / Register'}</span>
-                  </button>
-                </div>
-              )}
-            </section>
-
-            {/* SECTION 8: DEDICATED CONTROL PANEL & CMS SUITE */}
-            <section id="cms-dashboard" className="scroll-mt-24 space-y-6">
-              {isAdmin ? (
-                <AdminDashboard
-                  lang={lang}
-                  onClose={() => scrollToSection('hero')}
-                  onRefreshData={refreshStorageData}
-                  onOpenSandboxWithConfig={handleLaunchAppInSandbox}
-                  inline={true}
-                />
-              ) : (
-                <div className="rounded-3xl border border-blue-500/40 bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-950 p-6 sm:p-8 md:p-12 shadow-2xl space-y-6 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-                  <div className="relative z-10 space-y-5 max-w-3xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs font-bold text-amber-300">
-                      <Crown className="w-4 h-4 text-amber-400" />
-                      <span>{isRtl ? 'لوحة التحكم المخصصة ونظام إدارة المحتوى (CMS Master Control)' : 'Dedicated Control Panel & Dynamic CMS'}</span>
-                    </div>
-
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
-                      {isRtl ? 'تحكم شامل وديناميكي في كامل محتوى ومقومات المنصة' : 'Total Authority Over Content, Projects & System State'}
-                    </h2>
-
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      {isRtl 
-                        ? 'لوحة إدارة متكاملة ومخصصة تتيح لك نشر وحذف المقالات في الـ CMS، تحديث بنك الأسئلة الشائعة، إدارة الإعلانات العاجلة، تعديل أسعار باقات الترخيص، ربط محافظ الدفع (فودافون كاش، انستاباي)، واستعراض واعتماد مسودات الذكاء الاصطناعي لحظياً.'
-                        : 'Dedicated administrative suite for CMS publishing, dynamic FAQs, instant announcements, payment wallets orchestration, and AI customization draft moderation.'}
-                    </p>
-
-                    <button
-                      onClick={() => setIsSecretLoginOpen(true)}
-                      className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 hover:bg-slate-800 px-5 py-3 text-xs sm:text-sm font-bold text-slate-200 transition cursor-pointer"
-                    >
-                      <Lock className="w-4 h-4 text-slate-400" />
-                      <span>{isRtl ? 'تسجيل الدخول برمز مخصص' : 'Custom Passcode Sign In'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
-
-          </div>
-        ) : (
-          /* ============================================================ */
-          /* TABBED MODE (عرض التبويبات الفردية المركزة)                   */
-          /* ============================================================ */
-          <div className="space-y-8 animate-fadeIn">
+      {/* Main Tabbed Container Flow */}
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 md:py-10">
+        <div className="space-y-8 animate-fadeIn">
             {activeTab === 'store' && (
               <AppStore
                 apps={projects as any}
@@ -1098,8 +766,15 @@ export default function App() {
               <FaqSection lang={lang} adminSettings={adminSettings} />
             )}
 
-            {activeTab === 'about' && (
-              <AboutUsSection lang={lang} onClose={() => setActiveTab('store')} />
+            {activeTab === 'rating' && (
+              <PlatformRating lang={lang} showToast={showToast} />
+            )}
+
+            {activeTab === 'published-projects' && (
+              <div className="space-y-6 animate-fadeIn">
+                <h2 className="text-2xl font-bold text-white">{isRtl ? 'مشروعات منشورة' : 'Published Projects'}</h2>
+                <PublishedProjectsSection projects={publishedProjects} lang={lang} isAdmin={isAdmin} onRefresh={refreshStorageData} />
+              </div>
             )}
 
             {activeTab === 'media' && (
@@ -1273,47 +948,7 @@ export default function App() {
             )}
 
           </div>
-        )}
-
       </main>
-
-      {/* Floating Speed Dial / Quick Navigation Dock */}
-      {viewMode === 'onepage' && (
-        <aside aria-label="Quick navigation dock" className="fixed bottom-6 left-6 z-40 hidden sm:flex items-center gap-1.5 rounded-full border border-slate-800/90 bg-slate-950/90 backdrop-blur-xl p-1.5 shadow-2xl">
-          {[
-            { id: 'hero', label: isRtl ? 'الرئيسية' : 'Top', icon: Compass },
-            { id: 'store', label: isRtl ? 'المتجر' : 'Store', icon: Layers },
-            { id: 'wallets', label: isRtl ? 'طرق الدفع' : 'Payment Wallets', icon: CreditCard },
-            { id: 'articles', label: isRtl ? 'المقالات' : 'CMS', icon: FileText },
-            { id: 'faq', label: isRtl ? 'الأسئلة' : 'FAQ', icon: HelpCircle }
-          ].map((item) => {
-            const Icon = item.icon;
-            const isCur = activeSection === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                title={item.label}
-                className={`flex items-center justify-center w-9 h-9 rounded-full text-xs transition cursor-pointer ${
-                  isCur 
-                    ? 'bg-blue-600 text-white shadow'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-              </button>
-            );
-          })}
-          <div className="w-px h-5 bg-slate-800 mx-0.5" />
-          <button
-            onClick={() => scrollToSection('hero')}
-            title={isRtl ? 'للأعلى' : 'Back to top'}
-            className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 text-xs transition cursor-pointer"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-        </aside>
-      )}
 
       {/* iOS Install Modal */}
       {showIOSModal && (
@@ -1343,31 +978,14 @@ export default function App() {
       {/* Global Footer */}
       <footer className="no-print mt-16 border-t border-slate-800/80 bg-slate-950 py-10 px-4 text-center text-xs text-slate-400 space-y-4">
         <div className="flex flex-wrap items-center justify-center gap-3">
-          {(adminSettings.socialLinks.whatsapp || adminSettings.targetWhatsAppNumber) && (
-            <a 
-              href={buildWhatsAppUrl(adminSettings.targetWhatsAppNumber || adminSettings.socialLinks.whatsapp)} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-1.5 text-xs text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 transition"
-            >
-              💬 {adminSettings.socialAppNames?.whatsapp || 'WhatsApp'}
-            </a>
-          )}
-          {adminSettings.socialLinks.facebook && (
-            <a href={adminSettings.socialLinks.facebook} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-1.5 text-xs text-slate-300 hover:text-blue-400 hover:border-blue-500/40 transition">
-              {adminSettings.socialAppNames?.facebook || 'Facebook'}
-            </a>
-          )}
-          {adminSettings.socialLinks.youtube && (
-            <a href={adminSettings.socialLinks.youtube} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-1.5 text-xs text-slate-300 hover:text-red-400 hover:border-red-500/40 transition">
-              {adminSettings.socialAppNames?.youtube || 'YouTube'}
-            </a>
-          )}
-          {adminSettings.socialLinks.tiktok && (
-            <a href={adminSettings.socialLinks.tiktok} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-1.5 text-xs text-slate-300 hover:text-pink-400 hover:border-pink-500/40 transition">
-              {adminSettings.socialAppNames?.tiktok || 'TikTok'}
-            </a>
-          )}
+          <SocialMediaBar
+            links={adminSettings.socialLinksList || [
+              { id: 'tg', app: 'telegram', url: adminSettings.socialLinks.telegram || '#', isActive: !!adminSettings.socialLinks.telegram },
+            ]}
+            lang={lang}
+            variant="circle"
+            size="md"
+          />
         </div>
 
         <p>
@@ -1393,11 +1011,7 @@ export default function App() {
           refreshStorageData();
           setIsUserLoggedIn(true);
           setCurrentUser(user);
-          if (viewMode === 'onepage') {
-            scrollToSection('client-portal');
-          } else {
-            setActiveTab('client-dashboard');
-          }
+          setActiveTab('client-dashboard');
           showToast(isRtl ? `مرحباً بك يا ${user?.name || 'عميلنا العزيز'}! تم تسجيل الدخول بنجاح.` : `Welcome ${user?.name || 'Client'}! Signed in successfully.`, 'success');
         }}
         onAdminSuccess={() => {
@@ -1417,8 +1031,7 @@ export default function App() {
           onRefreshData={refreshStorageData}
           onOpenSandboxWithConfig={(cfg: any) => {
             setSandboxConfig(cfg);
-            if (viewMode === 'onepage') scrollToSection('sandbox');
-            else setActiveTab('sandbox');
+            setActiveTab('sandbox');
           }}
           inline={false}
         />
@@ -1439,6 +1052,20 @@ export default function App() {
           <AiSupportChat lang={lang} currentUser={currentUser} />
         </div>
       )}
+
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        lang={lang}
+        onClose={() => {
+          localStorage.setItem('hasSeenWelcome', 'true');
+          setShowWelcomeModal(false);
+        }}
+        onNavigate={(tab: string) => {
+          localStorage.setItem('hasSeenWelcome', 'true');
+          setShowWelcomeModal(false);
+          setActiveTab(tab as any);
+        }}
+      />
     </div>
   );
 }

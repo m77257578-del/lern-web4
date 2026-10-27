@@ -98,6 +98,12 @@ export interface TranslationDict {
   vsCodeExplorerSubtitle: string;
   copyFileCode: string;
   fileCopied: string;
+  heroMarketingTitle: string;
+  heroMarketingSubtitle: string;
+  heroFeature1: string;
+  heroFeature2: string;
+  heroFeature3: string;
+  heroCta: string;
 }
 
 export const translations: { ar: TranslationDict; en: TranslationDict } = {
@@ -199,7 +205,13 @@ export const translations: { ar: TranslationDict; en: TranslationDict } = {
     vsCodeExplorerTitle: "مستكشف الكود المصدر لبيئة VS Code و Vercel",
     vsCodeExplorerSubtitle: "توليد ملفات Next.js App Router غير المضغوطة والجاهزة للنسخ أو النشر المباشر على Edge",
     copyFileCode: "نسخ الكود بالكامل لـ VS Code",
-    fileCopied: "تم نسخ محتوى الملف!"
+    fileCopied: "تم نسخ محتوى الملف!",
+    heroMarketingTitle: "حول رؤيتك إلى واقع رقمي في دقائق",
+    heroMarketingSubtitle: "منصة ليرن ويب توفر لك أحدث التقنيات لبناء المتاجر، الشركات، والأنظمة التعليمية باحترافية وسهولة تامة.",
+    heroFeature1: "تصميمات عصرية ومتجاوبة",
+    heroFeature2: "دعم فني متواصل",
+    heroFeature3: "سرعة في الأداء والتثبيت",
+    heroCta: "ابدأ مشروعك الآن"
   },
   en: {
     appName: "Lern Web | ليرن ويب",
@@ -299,6 +311,12 @@ export const translations: { ar: TranslationDict; en: TranslationDict } = {
     vsCodeExplorerTitle: "VS Code & Vercel Source Code Explorer",
     vsCodeExplorerSubtitle: "Generate uncompressed, ready-to-copy Next.js App Router code files for local VS Code and Edge deployment",
     copyFileCode: "Copy File Code for VS Code",
-    fileCopied: "File content copied to clipboard!"
+    fileCopied: "File content copied to clipboard!",
+    heroMarketingTitle: "Turn Your Vision into Digital Reality in Minutes",
+    heroMarketingSubtitle: "Lern Web provides the ultimate toolkit for building high-performance stores, corporate sites, and educational platforms effortlessly.",
+    heroFeature1: "Ultra-Modern Responsive UI",
+    heroFeature2: "24/7 Dedicated Technical Support",
+    heroFeature3: "Lightning Fast Edge Deployment",
+    heroCta: "Launch Your Project Now"
   }
 };

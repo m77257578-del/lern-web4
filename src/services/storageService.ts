@@ -246,6 +246,18 @@ export interface UserAccount {
   purchasedPlanId?: string;
 }
 
+export interface PublishedProject {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  websiteUrl: string;
+  imageUrl: string;
+  videoUrl?: string;
+  createdAt: string;
+}
+
 export interface AiCustomizationDraft {
   id: string;
   projectId: string;
@@ -696,6 +708,7 @@ const DEFAULT_INITIAL_ANNOUNCEMENTS: AnnouncementBanner[] = [
 ];
 
 let cachedProjects: ProjectItem[] = [...DEFAULT_INITIAL_PROJECTS];
+let cachedPublishedProjects: PublishedProject[] = [];
 let cachedSettings: AdminSettings | null = null;
 let cachedWallets: WalletConfig[] = [];
 let cachedPlans: SubscriptionPlan[] = [];
@@ -2193,6 +2206,29 @@ PLATFORM CONTEXT (Lern Web):
       messageAr: 'تمت استعادة البيانات ونظام المحتوى بنجاح!',
       messageEn: 'Data and CMS content successfully restored!'
     };
+  },
+
+  getPublishedProjects(): PublishedProject[] {
+    return cachedPublishedProjects;
+  },
+
+  savePublishedProject(project: PublishedProject): PublishedProject[] {
+    const existingIndex = cachedPublishedProjects.findIndex(p => p.id === project.id);
+    if (existingIndex !== -1) {
+      cachedPublishedProjects[existingIndex] = { ...project };
+    } else {
+      cachedPublishedProjects.unshift(project);
+    }
+    notifyStorageChange();
+    saveDocument('published_projects', project);
+    return cachedPublishedProjects;
+  },
+
+  deletePublishedProject(id: string): PublishedProject[] {
+    cachedPublishedProjects = cachedPublishedProjects.filter(p => p.id !== id);
+    notifyStorageChange();
+    deleteDocument('published_projects', id);
+    return cachedPublishedProjects;
   }
 };
 

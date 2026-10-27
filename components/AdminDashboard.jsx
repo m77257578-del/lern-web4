@@ -31,6 +31,7 @@ import { storageService, formatVideoEmbedUrl, isYouTubeUrlOrEmbed } from '../src
 import SeoManagement from './SeoManagement';
 import { translations } from '../src/data/translations';
 import { AVAILABLE_SOCIAL_APPS, SocialAppSvgIcon, getSocialAppMeta } from '../src/components/SocialMediaIcons';
+import { PublishedProjectsSection } from '../src/components/PublishedProjectsSection';
 
 export default function AdminDashboard({ 
   lang = 'ar', 
@@ -61,6 +62,7 @@ export default function AdminDashboard({
   const [staffList, setStaffList] = useState(() => storageService.getStaff());
   const [userRolesMap, setUserRolesMap] = useState(() => storageService.getUserRoles());
   const [achievementsList, setAchievementsList] = useState(() => storageService.getAllAchievements());
+  const [publishedProjects, setPublishedProjects] = useState(() => storageService.getPublishedProjects());
   
   // Achievement form state
   const [newAchTitle, setNewAchTitle] = useState('');
@@ -190,6 +192,7 @@ export default function AdminDashboard({
     setStaffList(storageService.getStaff());
     setUserRolesMap(storageService.getUserRoles());
     setAchievementsList(storageService.getAllAchievements());
+    setPublishedProjects(storageService.getPublishedProjects());
   };
 
   useEffect(() => {
@@ -1423,6 +1426,7 @@ export default function AdminDashboard({
             { id: 'cms-articles', label: isRtl ? 'إدارة المقالات والمدونة' : 'CMS Blog & Articles', icon: FileText, count: articles.length },
             { id: 'cms-faqs', label: isRtl ? 'إدارة الأسئلة الشائعة' : 'CMS FAQ Manager', icon: HelpCircle, count: faqs.length },
             { id: 'cms-announcements', label: isRtl ? 'الإعلانات والبانر الإخباري' : 'CMS Announcements', icon: Sparkles, count: announcements.length },
+            { id: 'published-portfolio', label: isRtl ? '🏆 معرض المشاريع المنشورة' : '🏆 Published Portfolio', icon: Globe, count: publishedProjects.length },
             { id: 'projects', label: isRtl ? 'إدارة ونشر المشاريع' : 'Projects', icon: Layers, count: projects.length },
             { id: 'plans', label: isRtl ? 'خطط التراخيص والأسعار' : 'Subscription Plans', icon: BarChart3, count: plans.length },
             { id: 'seo', label: isRtl ? 'إعدادات محركات البحث (SEO)' : 'SEO Management', icon: Globe },
@@ -2470,6 +2474,35 @@ export default function AdminDashboard({
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION: PUBLISHED PORTFOLIO MANAGEMENT */}
+        {activeSection === 'published-portfolio' && (
+          <div className="space-y-8 animate-fadeIn">
+            <div className="rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 p-6 md:p-8 shadow-2xl space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-semibold text-blue-400">
+                <Globe className="w-4 h-4 text-blue-400" />
+                <span>{isRtl ? 'إدارة معرض سابقة الأعمال والمشاريع المنفذة' : 'Published Projects Portfolio Manager'}</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-white">
+                {isRtl ? 'معرض المشاريع المنشورة للعملاء' : 'Client Projects Portfolio'}
+              </h2>
+              <p className="text-xs md:text-sm text-slate-300 max-w-2xl">
+                {isRtl 
+                  ? 'قم بإضافة وحذف المشاريع التي تم تنفيذها بالفعل ونشر روابطها وصورها وفيديوهاتها لتظهر في معرض سابقة الأعمال.' 
+                  : 'Add, edit, or remove completed projects with live links, images, and videos to showcase in your portfolio.'}
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 md:p-8 shadow-xl">
+              <PublishedProjectsSection 
+                projects={publishedProjects} 
+                lang={lang} 
+                isAdmin={true} 
+                onRefresh={refreshLocalData} 
+              />
             </div>
           </div>
         )}
@@ -4095,26 +4128,61 @@ export default function AdminDashboard({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-800">
-              {[
-                { key: 'facebook', label: 'رابط فيسبوك:' },
-                { key: 'youtube', label: 'رابط يوتيوب:' },
-                { key: 'tiktok', label: 'رابط تيك توك:' }
-              ].map((s) => (
-                <div key={s.key} className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">{s.label}</label>
-                  <input
-                    type="url"
-                    value={settings.socialLinks[s.key] || ''}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      socialLinks: { ...settings.socialLinks, [s.key]: e.target.value }
-                    })}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white font-mono"
-                  />
-                </div>
-              ))}
-            </div>
+             {/* Dynamic Social Links List Manager */}
+             <div className="space-y-4 pt-4 border-t border-slate-800">
+               <div className="flex items-center justify-between">
+                 <label className="text-sm font-bold text-slate-300">
+                   {isRtl ? 'روابط منصات التواصل (قابلة للتعديل):' : 'Social Media Links (Editable):'}
+                 </label>
+                 <button
+                   type="button"
+                   onClick={() => setSettings({ ...settings, socialLinksList: [...(settings.socialLinksList || []), { id: Date.now().toString(), app: 'website', titleAr: '', titleEn: '', url: '', isActive: true }] })}
+                   className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-500"
+                 >
+                   <Plus className="w-3.5 h-3.5" />
+                   {isRtl ? 'إضافة منصة' : 'Add Platform'}
+                 </button>
+               </div>
+               <div className="space-y-2">
+                 {(settings.socialLinksList || []).map((link, idx) => (
+                   <div key={link.id} className="flex gap-2 items-center bg-slate-950 p-2 rounded-lg border border-slate-700">
+                     <select
+                       value={link.app}
+                       onChange={(e) => {
+                         const updated = [...(settings.socialLinksList || [])];
+                         updated[idx].app = e.target.value;
+                         setSettings({ ...settings, socialLinksList: updated });
+                       }}
+                       className="rounded-lg bg-slate-900 px-2 py-1.5 text-xs text-white border border-slate-700"
+                     >
+                       {AVAILABLE_SOCIAL_APPS.map(app => <option key={app.type} value={app.type}>{app.nameEn}</option>)}
+                     </select>
+                     <input
+                       type="text"
+                       placeholder={isRtl ? 'رابط المنصة' : 'URL'}
+                       value={link.url}
+                       onChange={(e) => {
+                         const updated = [...(settings.socialLinksList || [])];
+                         updated[idx].url = e.target.value;
+                         setSettings({ ...settings, socialLinksList: updated });
+                       }}
+                       className="flex-1 rounded-lg bg-slate-900 px-2 py-1.5 text-xs text-white border border-slate-700"
+                     />
+                     <button
+                       type="button"
+                       onClick={() => {
+                         const updated = (settings.socialLinksList || []).filter((_, i) => i !== idx);
+                         setSettings({ ...settings, socialLinksList: updated });
+                       }}
+                       className="text-rose-400 hover:text-rose-300 p-1.5"
+                     >
+                       <Trash2 className="w-4 h-4" />
+                     </button>
+                   </div>
+                 ))}
+               </div>
+             </div>
+
 
             {/* Visual Identity & Primary Colors Customizer */}
             <div className="rounded-2xl border border-blue-500/30 bg-blue-950/20 p-5 space-y-4 pt-4 border-t border-slate-800">

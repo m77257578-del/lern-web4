@@ -182,7 +182,7 @@ export default function Three3DLoaderPortal({ lang = 'ar', onEnterPlatform }: Th
             <span>{isRtl ? 'محرك 3D ومتاجر ليرن ويب السحابية' : 'Lern Web 3D Cloud Engine'}</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-black tracking-wider">
-            {isRtl ? 'ليرن ويب | Lern Web' : 'Lern Web Platform'}
+            <span className="animate-rocket-up inline-block">🚀</span> {isRtl ? 'ليرن ويب | Lern Web' : 'Lern Web Platform'}
           </h1>
           <p className="text-xs text-slate-400 font-sans">
             {isRtl ? 'منظومة إلكترونية متكاملة مع محاكي مراكز وتطبيق PWA ذكي' : 'Integrated Educational Suite & PWA Engine'}
@@ -201,10 +201,13 @@ export default function Three3DLoaderPortal({ lang = 'ar', onEnterPlatform }: Th
         </div>
 
         {/* Progress Bar */}
-        <div className="space-y-2">
+        <div className="space-y-2 relative">
           <div className="flex items-center justify-between text-xs font-bold">
             <span className="text-slate-400">{isRtl ? 'جاري تهيئة الأنظمة الثلاثية الأبعاد...' : 'Initializing 3D Systems...'}</span>
-            <span className="text-blue-400 font-mono">{loadingProgress}%</span>
+            <span className="text-blue-400 font-mono flex items-center gap-2">
+                <span className="animate-orbit text-xl">🛰️</span>
+                {loadingProgress}%
+            </span>
           </div>
           <div className="h-2 w-full rounded-full bg-slate-950 border border-slate-800 overflow-hidden">
             <div 

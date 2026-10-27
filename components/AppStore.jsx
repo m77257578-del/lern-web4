@@ -308,41 +308,63 @@ export default function AppStore({
 
   return (
     <div className="w-full space-y-8 animate-fadeIn">
-      {/* Marketplace Brand Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 p-6 md:p-10 shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-emerald-600/10 blur-3xl pointer-events-none" />
+      {/* High-Fidelity Marketing Hero Section */}
+      <div className="relative overflow-hidden rounded-[2rem] border border-slate-800 bg-gradient-to-br from-slate-900 via-blue-950/30 to-slate-900 p-8 md:p-16 shadow-3xl">
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-blue-500/20 blur-[100px] animate-pulse pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-purple-500/20 blur-[100px] animate-pulse pointer-events-none" style={{ animationDelay: '2s' }} />
         
-        <div className="relative z-10 max-w-4xl space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs md:text-sm font-semibold text-blue-400">
-            <Sparkles className="w-4 h-4 animate-spin text-blue-400" style={{ animationDuration: '6s' }} />
-            <span>{isRtl ? 'سوق المتاجر والمواقع والمنصات الرقمية المتكاملة v4.0' : 'Unified Web, App & Store Marketplace v4.0'}</span>
+        <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto space-y-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-6 py-2 text-xs md:text-sm font-bold text-blue-400 tracking-wide uppercase animate-fadeIn">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span>{isRtl ? 'بوابتك نحو التحول الرقمي' : 'Your Gateway to Digital Transformation'}</span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-tight">
-            {isRtl ? 'استكشف واطلق أي موقع إلكتروني أو تطبيق سحابي بنقرة واحدة' : 'Discover & Deploy Any Website or Cloud Platform in Minutes'}
+          <h1 className="text-4xl md:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-slate-400 leading-tight">
+            {t.heroMarketingTitle}
           </h1>
 
-          <p className="text-base md:text-lg text-slate-300 leading-relaxed max-w-3xl">
-            {isRtl 
-              ? 'منظومة شاملة لبناء وتصفح جميع أنواع المتاجر والمواقع الرقمية: المتاجر الإلكترونية، مواقع الشركات والأعمال، منصات الذكاء الاصطناعي وSaaS، دليل العقارات، أنظمة العيادات والمستشفيات، منيو المطاعم الرقمي، البوابات الإخبارية، والأكاديميات التعليمية.'
-              : 'A comprehensive ecosystem to build & deploy any digital website: E-Commerce stores, Corporate agency sites, SaaS & Generative AI platforms, Real Estate portals, Healthcare clinic bookings, QR Restaurant menus, News publications, and Smart LMS Academies.'}
+          <p className="text-lg md:text-xl text-slate-300 leading-relaxed max-w-2xl font-medium">
+            {t.heroMarketingSubtitle}
           </p>
 
-          {/* Quick Metrics Bar */}
-          <div className="pt-2 flex flex-wrap items-center gap-6 text-xs md:text-sm text-slate-400">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 ring-4 ring-emerald-500/20" />
-              <span className="text-slate-200 font-medium">{isRtl ? 'تثبيت فوري بضغطة واحدة' : 'Instant 1-Click Provisioning'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-blue-400" />
-              <span>{isRtl ? 'معايير أمان وتشفير وتوافق مع Edge' : 'Enterprise Security & Edge Ready'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-purple-400" />
-              <span>{isRtl ? 'جاهزية كاملة لتطبيقات PWA والموبايل' : 'PWA & Native Mobile Ready'}</span>
-            </div>
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <button
+              onClick={() => {
+                const searchInput = document.querySelector('input[type="text"]');
+                if (searchInput) searchInput.focus();
+              }}
+              style={{ backgroundColor: adminSettings?.primaryColor || '#2563eb' }}
+              className="px-8 py-4 rounded-2xl text-white font-bold text-lg shadow-2xl shadow-blue-900/40 hover:scale-105 transition-transform active:scale-95 flex items-center gap-2"
+            >
+              <ArrowUpRight className="w-5 h-5" />
+              {t.heroCta}
+            </button>
+            
+            <a
+              href={buildWhatsAppUrl(targetWhatsAppNumber, isRtl ? 'أريد البدء في مشروع جديد' : 'I want to start a new project')}
+              target="_blank"
+              rel="noreferrer"
+              className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-colors flex items-center gap-2 backdrop-blur-md"
+            >
+              <MessageSquare className="w-5 h-5" />
+              {isRtl ? 'تحدث معنا' : 'Contact Us'}
+            </a>
+          </div>
+
+          {/* Value Props Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full pt-12 border-t border-slate-800/50">
+            {[
+              { icon: Smartphone, label: t.heroFeature1, color: 'text-emerald-400' },
+              { icon: Shield, label: t.heroFeature2, color: 'text-blue-400' },
+              { icon: Cpu, label: t.heroFeature3, color: 'text-purple-400' }
+            ].map((prop, i) => (
+              <div key={i} className="flex items-center justify-center gap-3 group">
+                <div className={`p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 ${prop.color} group-hover:scale-110 transition-transform`}>
+                  <prop.icon className="w-5 h-5" />
+                </div>
+                <span className="text-sm md:text-base font-bold text-slate-200">{prop.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
